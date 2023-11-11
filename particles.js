@@ -58,3 +58,27 @@ class SwordParticle {
         this.timer -= 5;
     }
 }
+
+class RainParticle {
+    constructor() {
+        this.position = new p5.Vector(random(0, width), random(0, height));
+        this.timer = 1;
+        this.size = 1.5;
+        this.velocity = new p5.Vector(random(2, 3), HALF_PI - 0.5 + random(-0.1, 0.1));
+    }
+
+    draw() {
+        fill(40, 80, 200);
+        rect(this.position.x - this.size, this.position.y - 3 * this.size, 1.1 * this.size, 5 * this.size);
+        rect(this.position.x, this.position.y - 2 * this.size, 1.1 * this.size, 4 * this.size);
+        rect(this.position.x + this.size, this.position.y - this.size, 1.1 * this.size, 3 * this.size);
+        this.position.x += this.velocity.x * cos(this.velocity.y);
+        this.position.y += this.velocity.x * sin(this.velocity.y);
+        if (this.position.x > width) {
+            this.position.x = 0;
+        }
+        if (this.position.y > height) {
+            this.position.y = 0;
+        }
+    }
+}

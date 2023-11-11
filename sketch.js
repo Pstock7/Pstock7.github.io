@@ -102,6 +102,11 @@ function reset() {
     game.player = null;
     game.enemies = [];
     game.particles = [];
+    if (game.currentGameState === gameStates.Menu) {
+        for (let i = 0; i < 50; i++) {
+            game.particles.push(new RainParticle());
+        }
+    }
 }
 
 /**
@@ -168,6 +173,7 @@ function drawMenu() {
             image(game.wallImg, x, y, imgSize, imgSize);
         }
     }
+    drawParticles();
     drawWords(12, 36, pixelText.logoWords, 3, color(230));
     drawWords(12, 224, pixelText.authorWords, 1.5, color(230));
     let startColor = color(0, 160, 0);
