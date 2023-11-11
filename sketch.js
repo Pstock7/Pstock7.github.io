@@ -22,6 +22,7 @@ const game = {
     enemies: [],
     particles: [],
     wallImg: null,
+    level: 0,
 }
 
 // Text objects that are created on startup
@@ -30,9 +31,12 @@ const pixelText = {
     authorWords: stringToPixelArt("By:Patrick Stock"),
     menuStart: stringToPixelArt("Start"),
     menuInstructions: stringToPixelArt("Instructions"),
-    instructions: stringToPixelArt("Use the arrow keys to move.\nPress z to attack or select.\nPress x to cancel."),
+    instructions: stringToPixelArt("Use the arrow keys to move.\nPress z to attack.\nPress x to select."),
     back: stringToPixelArt("Back"),
     wip: stringToPixelArt("Work in Progress"),
+    level: stringToPixelArt("Level 1"),
+    gameover: stringToPixelArt("Game Over"),
+    playagain: stringToPixelArt("Click to play again"),
 }
 
 /**
@@ -43,13 +47,25 @@ function mouseClicked() {
         case gameStates.Menu:
             if (mouseX > 0 && mouseX < 82 && mouseY > 290 && mouseY < 324) {
                 game.currentGameState = gameStates.Game;
+                reset();
+                game.level++;
+                initTilemap(game.level);
             } else if (mouseX > 0 && mouseX < 166 && mouseY > 340 && mouseY < 374) {
                 game.currentGameState = gameStates.Instructions;
+                reset();
+                initTilemap(game.level);
             }
             break;
         case gameStates.Instructions:
             if (mouseX > 0 && mouseX < 70 && mouseY > 340 && mouseY < 374) {
                 game.currentGameState = gameStates.Menu;
+                reset();
+            }
+            break;
+        case gameStates.GameOver:
+            if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+                game.currentGameState = gameStates.Menu;
+                reset();
             }
             break;
     }
@@ -83,8 +99,9 @@ function setup() {
  * Reset the game
  */
 function reset() {
-    game.player = new Player(100, 200);
-    game.enemies.push(new Slime(300, 200));
+    game.player = null;
+    game.enemies = [];
+    game.particles = [];
 }
 
 /**
@@ -100,7 +117,7 @@ function drawWords(x, y, words, pixelSize, color) {
                 for (let pixelX = 0; pixelX < words[word][letter][pixelY].length; pixelX++) {
                     let pixel = words[word][letter][pixelY][pixelX];
                     if (pixel === "x") {
-                        rect(x + pixelSize * pixelX, y + pixelSize * pixelY, pixelSize, pixelSize);
+                        rect(x + pixelSize * pixelX, y + pixelSize * pixelY, pixelSize * 1.1, pixelSize * 1.1);
                     }
                 }
             }
@@ -108,6 +125,35 @@ function drawWords(x, y, words, pixelSize, color) {
         }
         x = originalX;
         y += 20 * pixelSize;
+    }
+}
+
+function drawLevelText() {
+    drawWords(10, 10, pixelText.level, 1.5, color(230));
+}
+
+function drawEntities() {
+    for (let i = 0; i < game.enemies.length; i++) {
+        if (game.enemies[i].health <= 0) {
+            game.enemies.splice(i, 1);
+            i--;
+        } else {
+            game.enemies[i].draw();
+            game.enemies[i].update();
+        }
+    }
+    game.player.draw();
+    game.player.control();
+}
+
+function drawParticles() {
+    for (let i = 0; i < game.particles.length; i++) {
+        if (game.particles[i].timer <= 0) {
+            game.particles.splice(i, 1);
+            i--;
+        } else {
+            game.particles[i].draw();
+        }
     }
 }
 
@@ -140,39 +186,46 @@ function drawMenu() {
  * Draws the instructions screen
  */
 function drawInstructions() {
-    background(50);
     drawWords(12, 36, pixelText.instructions, 1, color(230));
     let backColor = color(230, 0, 0);
     if (mouseX > 0 && mouseX < 70 && mouseY > 340 && mouseY < 374) {
         backColor = color(255);
     }
     drawWords(12, 350, pixelText.back, 1, backColor);
-    for (let i = 0; i < game.particles.length; i++) {
-        game.particles[i].draw();
-        if (game.particles[i].timer === 0) {
-            game.particles.splice(i, 1);
-        }
-    }
-    for (let i = 0; i < game.enemies.length; i++) {
-        game.enemies[i].draw();
-        game.enemies[i].update();
-    }
-    game.player.draw();
-    game.player.control();
+    drawParticles();
+    drawEntities();
 }
 
 /**
  * Draw the game to the screen
  */
 function drawGame() {
-    background(50);
-    drawWords(12, 150, pixelText.wip, 2, color(230));
+    if (game.level === 3) {
+        drawWords(12, 150, pixelText.wip, 2, color(230));
+        return;
+    }
+    drawLevelText();
+    drawParticles();
+    drawEntities();
+    if (game.player.health <= 0) {
+        game.currentGameState = gameStates.GameOver;
+        game.level = 0;
+        return;
+    }
+    if (game.enemies.length === 0) {
+        reset();
+        game.level++;
+        pixelText.level = stringToPixelArt("Level " + game.level);
+        initTilemap(game.level);
+    }
 }
 
 /**
  * Draws the game over message to the screen
  */
 function drawGameOver() {
+    drawWords(95, 150, pixelText.gameover, 2, color(230));
+    drawWords(30, 250, pixelText.playagain, 1.5, color(230));
 }
 
 /**
@@ -185,6 +238,7 @@ function drawWinScreen() {
  * Main draw loop for drawing the current game state
  */
 function draw() {
+    background(50);
     // Draw whichever game state we are in
     if (game.currentGameState === gameStates.Menu) {
         drawMenu();

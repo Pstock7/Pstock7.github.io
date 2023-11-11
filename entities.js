@@ -14,6 +14,8 @@ class Player {
         this.startAttackFrame = 0;
         this.armMovement = 0;
         this.armVelocity = 0.5;
+        this.attackStrength = 1;
+        this.health = 5;
     }
 
     draw() {
@@ -87,13 +89,29 @@ class Player {
             this.armMovement += this.armVelocity;
         }
 
-        if (game.keyArray["z".charCodeAt(0)] === 1) {
+        if (game.keyArray["Z".charCodeAt(0)] === 1) {
             this.attack();
         }
     }
 
     attack() {
-        // TODO: Check using startAttackFrame whether attack is over. Need to come up with animation
+        if (frameCount - this.startAttackFrame > 30) {
+            // Detect enemies and call their respective damage functions
+            for (let i = 0; i < game.enemies.length; i++) {
+                let vectorToEnemy = new p5.Vector(game.enemies[i].position.x - this.position.x, game.enemies[i].position.y - this.position.y);
+                let angleToEnemy = vectorToEnemy.angleBetween(new p5.Vector(cos(this.direction), sin(this.direction)));
+                if (vectorToEnemy.mag() <= game.enemies[i].size / 2 + 37
+                    && angleToEnemy >= -HALF_PI && angleToEnemy <= HALF_PI) {
+                    game.enemies[i].damage(this.attackStrength);
+                }
+            }
+            game.particles.unshift(new SwordParticle(this.position.x, this.position.y, this.direction));
+            this.startAttackFrame = frameCount;
+        }
+    }
+
+    damage(enemy) {
+        this.health -= enemy.attackStrength;
     }
 }
 
@@ -103,6 +121,11 @@ class Slime {
         this.direction = random(0, TWO_PI);
         this.speed = 2;
         this.size = 20;
+        this.health = 5;
+        this.currentState = this.wander;
+        this.knockbackVector = new p5.Vector(0, 0);
+        this.currentFrameCount = 0;
+        this.attackStrength = 1;
     }
 
     draw() {
@@ -123,23 +146,52 @@ class Slime {
     }
 
     update() {
-        let relativeFrame = frameCount % 90;
+        this.currentState();
+        this.currentFrameCount++;
+        if (this.position.dist(game.player.position) <= 20) {
+            game.player.damage(this);
+        }
+    }
+
+    wander() {
+        let relativeFrame = this.currentFrameCount % 90;
         if (relativeFrame === 0) {
             this.direction = random(0, TWO_PI);
             game.particles.unshift(new SlimeParticle(this.position.x, this.position.y));
         } else if (relativeFrame <= 30) {
             this.position.x += this.speed * cos(this.direction)
             this.position.y += this.speed * sin(this.direction)
-            if (this.position.x < this.size / 2) {
-                this.position.x = this.size / 2;
-            } else if (this.position.x > width - this.size / 2) {
-                this.position.x = width - this.size / 2;
-            }
-            if (this.position.y < this.size / 2) {
-                this.position.y = this.size / 2;
-            } else if (this.position.y > height - this.size / 2) {
-                this.position.y = height - this.size / 2;
-            }
+            this.moveBackInbounds();
+        }
+    }
+
+    knockback() {
+        if (this.currentFrameCount === 30) {
+            this.currentState = this.wander;
+        }
+        this.position.add(this.knockbackVector);
+        this.moveBackInbounds();
+    }
+
+    damage(inflictedDamage) {
+        this.health -= inflictedDamage;
+        this.knockbackVector.set(this.position.x - game.player.position.x, this.position.y - game.player.position.y);
+        this.knockbackVector.normalize();
+        this.knockbackVector.mult(this.speed);
+        this.currentState = this.knockback;
+        this.currentFrameCount = 0;
+    }
+
+    moveBackInbounds() {
+        if (this.position.x < this.size / 2) {
+            this.position.x = this.size / 2;
+        } else if (this.position.x > width - this.size / 2) {
+            this.position.x = width - this.size / 2;
+        }
+        if (this.position.y < this.size / 2) {
+            this.position.y = this.size / 2;
+        } else if (this.position.y > height - this.size / 2) {
+            this.position.y = height - this.size / 2;
         }
     }
 }
