@@ -216,6 +216,7 @@ function drawGame() {
     if (game.player.health <= 0) {
         game.currentGameState = gameStates.GameOver;
         game.level = 0;
+        pixelText.level = stringToPixelArt("Level 1");
         return;
     }
     if (game.enemies.length === 0) {
