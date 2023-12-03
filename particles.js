@@ -63,6 +63,7 @@ class ArrowParticle {
     constructor(x, y, direction) {
         this.position = new p5.Vector(x, y);
         this.timer = 1;
+        this.speed = 5;
         this.direction = direction;
         this.positionOffset = 10;
         this.arrowHeadOffset = 15;
@@ -92,7 +93,7 @@ class ArrowParticle {
         // Detect any collisions
         this.detectCollision();
         // Move arrow forward
-        this.positionOffset += 3;
+        this.positionOffset += this.speed;
         // Delete projectiles that are off-screen
         if (this.positionOffset > 600) {
             this.timer = 0;
