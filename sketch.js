@@ -23,6 +23,7 @@ const game = {
     particles: [],
     wallImg: null,
     level: 0,
+    music: null,
 }
 
 // Text objects that are created on startup
@@ -44,6 +45,7 @@ const pixelText = {
  * Runs if the mouse has been clicked
  */
 function mouseClicked() {
+    if (!game.music.isPlaying()) game.music.loop();
     switch (game.currentGameState) {
         case gameStates.Menu:
             if (mouseX > 0 && mouseX < 82 && mouseY > 290 && mouseY < 324) {
@@ -80,6 +82,10 @@ function keyReleased() {
     game.keyArray[keyCode] = 0;
 }
 
+function preload() {
+    game.music = loadSound("apostatas-177057.mp3");
+}
+
 /**
  * Setup the game before drawing to the screen.
  */
@@ -87,8 +93,8 @@ function setup() {
     createCanvas(400, 400);
     // Stop right click from bringing up the context menu, so we can use it as an input
     document.addEventListener('contextmenu', event => event.preventDefault());
-    game.wallImg = loadImage("wall-pixel-art.png");
     // Initialize important game components
+    game.wallImg = loadImage("wall-pixel-art.png");
     reset();
 }
 
