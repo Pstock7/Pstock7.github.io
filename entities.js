@@ -12,10 +12,11 @@ class Player {
         this.speed = 2;
         this.size = 20;
         this.startAttackFrame = 0;
+        this.startShootProjectileFrame = 0;
         this.armMovement = 0;
         this.armVelocity = 0.5;
         this.attackStrength = 1;
-        this.health = 5;
+        this.health = 1;
     }
 
     draw() {
@@ -45,34 +46,20 @@ class Player {
         // Make a vector to hold the movement
         let movement = new p5.Vector(0, 0);
 
-        if (game.keyArray[LEFT_ARROW] === 1 && this.position.x > this.size / 2) {
+        if (game.keyArray['A'.charCodeAt(0)] === 1 && this.position.x > this.size / 2) {
             movement.x -= 1;
-            this.direction = PI;
         }
-        if (game.keyArray[RIGHT_ARROW] === 1 && this.position.x < width - this.size / 2) {
+        if (game.keyArray['D'.charCodeAt(0)] === 1 && this.position.x < width - this.size / 2) {
             movement.x += 1;
-            this.direction = 0;
         }
-        if (game.keyArray[UP_ARROW] === 1 && this.position.y > this.size / 2) {
+        if (game.keyArray['W'.charCodeAt(0)] === 1 && this.position.y > this.size / 2) {
             movement.y -= 1;
-            this.direction = -HALF_PI;
         }
-        if (game.keyArray[DOWN_ARROW] === 1 && this.position.y < width - this.size / 2) {
+        if (game.keyArray['S'.charCodeAt(0)] === 1 && this.position.y < width - this.size / 2) {
             movement.y += 1;
-            this.direction = HALF_PI;
         }
-        if (game.keyArray[LEFT_ARROW] === 1 && game.keyArray[DOWN_ARROW] === 1) {
-            this.direction = HALF_PI + QUARTER_PI;
-        }
-        if (game.keyArray[RIGHT_ARROW] === 1 && game.keyArray[DOWN_ARROW] === 1) {
-            this.direction = QUARTER_PI;
-        }
-        if (game.keyArray[LEFT_ARROW] === 1 && game.keyArray[UP_ARROW] === 1) {
-            this.direction = PI + QUARTER_PI;
-        }
-        if (game.keyArray[RIGHT_ARROW] === 1 && game.keyArray[UP_ARROW] === 1) {
-            this.direction = -QUARTER_PI;
-        }
+        // Make the direction of the player where the mouse is
+        this.direction = createVector(mouseX - this.position.x, mouseY - this.position.y).heading()
         // Make sure the player's speed is always the same (even on the diagonals)
         movement.normalize();
         movement.mult(this.speed);
@@ -89,25 +76,38 @@ class Player {
             this.armMovement += this.armVelocity;
         }
 
-        if (game.keyArray["Z".charCodeAt(0)] === 1) {
+        let framesSinceLastAttack = frameCount - this.startAttackFrame;
+        if (mouseIsPressed && mouseButton === LEFT && framesSinceLastAttack > 30 || [10, 20].includes(framesSinceLastAttack)) {
             this.attack();
+        }
+
+        let framesSinceLastShot = frameCount - this.startShootProjectileFrame;
+        if (mouseIsPressed && mouseButton === RIGHT && framesSinceLastShot > 60) {
+            this.shoot();
         }
     }
 
     attack() {
-        if (frameCount - this.startAttackFrame > 30) {
-            // Detect enemies and call their respective damage functions
-            for (let i = 0; i < game.enemies.length; i++) {
-                let vectorToEnemy = new p5.Vector(game.enemies[i].position.x - this.position.x, game.enemies[i].position.y - this.position.y);
-                let angleToEnemy = vectorToEnemy.angleBetween(new p5.Vector(cos(this.direction), sin(this.direction)));
-                if (vectorToEnemy.mag() <= game.enemies[i].size / 2 + 37
-                    && angleToEnemy >= -HALF_PI && angleToEnemy <= HALF_PI) {
-                    game.enemies[i].damage(this.attackStrength);
-                }
+        // Detect enemies and call their respective damage functions
+        for (let i = 0; i < game.enemies.length; i++) {
+            let vectorToEnemy = new p5.Vector(game.enemies[i].position.x - this.position.x, game.enemies[i].position.y - this.position.y);
+            let angleToEnemy = vectorToEnemy.angleBetween(new p5.Vector(cos(this.direction), sin(this.direction)));
+            if (vectorToEnemy.mag() <= game.enemies[i].size / 2 + 37
+                && angleToEnemy >= -HALF_PI && angleToEnemy <= HALF_PI) {
+                game.enemies[i].damage(this.attackStrength, this.position);
             }
+        }
+        // Spawn sword particle and reset frame timer
+        if (frameCount - this.startAttackFrame > 30) {
             game.particles.unshift(new SwordParticle(this.position.x, this.position.y, this.direction));
             this.startAttackFrame = frameCount;
         }
+    }
+
+    shoot() {
+        // Shoot an arrow
+        game.particles.unshift(new ArrowParticle(this.position.x, this.position.y, this.direction));
+        this.startShootProjectileFrame = frameCount;
     }
 
     damage(enemy) {
@@ -116,16 +116,21 @@ class Player {
 }
 
 class Slime {
-    constructor(x, y) {
+    constructor(x, y, health) {
         this.position = new p5.Vector(x, y);
         this.direction = random(0, TWO_PI);
-        this.speed = 2;
+        this.speed = 1.5;
         this.size = 20;
-        this.health = 5;
+        this.health = health;
+        this.initialHealth = health;
         this.currentState = this.wander;
         this.knockbackVector = new p5.Vector(0, 0);
         this.currentFrameCount = 0;
         this.attackStrength = 1;
+        this.primaryColor = color(0, 220, 0);
+        this.secondaryColor = color(0, 160, 0);
+        this.damagePrimaryColor = color(220, 50, 0);
+        this.damageSecondaryColor = color(160, 50, 0);
     }
 
     draw() {
@@ -134,21 +139,35 @@ class Slime {
         rotate(this.direction);
         noStroke();
         // Body
-        fill(0, 220, 0);
+        if (this.currentState === this.knockback) {
+            fill(this.damagePrimaryColor);
+        } else {
+            fill(this.primaryColor);
+        }
         ellipse(0, 0, this.size, this.size);
-        fill(0, 160, 0);
-        ellipse(0, 0, this.size - 5, this.size - 5);
+        if (this.currentState === this.knockback) {
+            fill(this.damageSecondaryColor);
+        } else {
+            fill(this.secondaryColor);
+        }
+        ellipse(0, 0, this.size * 0.75, this.size * 0.75);
         // Eyes
         fill(0);
-        ellipse(7, 3.5, 4, 4);
-        ellipse(7, -3.5, 4, 4);
+        ellipse(this.size * 7 / 20, this.size * 3.5 / 20, this.size / 5, this.size / 5);
+        ellipse(this.size * 7 / 20, -this.size * 3.5 / 20, this.size / 5, this.size / 5);
+        // Health bar
+        rotate(-this.direction);
+        fill(220, 0, 0);
+        rect(-this.size / 2, -this.size / 2 - 15, this.size, 5);
+        fill(0, 220, 0);
+        rect(-this.size / 2, -this.size / 2 - 15, this.size * this.health / this.initialHealth, 5);
         pop();
     }
 
     update() {
         this.currentState();
         this.currentFrameCount++;
-        if (this.position.dist(game.player.position) <= 20) {
+        if (this.position.dist(game.player.position) < this.size / 2 + game.player.size / 2) {
             game.player.damage(this);
         }
     }
@@ -157,7 +176,7 @@ class Slime {
         let relativeFrame = this.currentFrameCount % 90;
         if (relativeFrame === 0) {
             this.direction = random(0, TWO_PI);
-            game.particles.unshift(new SlimeParticle(this.position.x, this.position.y));
+            game.particles.unshift(new SlimeParticle(this.position.x, this.position.y, this.size));
         } else if (relativeFrame <= 30) {
             this.position.x += this.speed * cos(this.direction)
             this.position.y += this.speed * sin(this.direction)
@@ -173,9 +192,10 @@ class Slime {
         this.moveBackInbounds();
     }
 
-    damage(inflictedDamage) {
+    damage(inflictedDamage, knockbackPosition) {
+        if (this.currentState === this.knockback) return;
         this.health -= inflictedDamage;
-        this.knockbackVector.set(this.position.x - game.player.position.x, this.position.y - game.player.position.y);
+        this.knockbackVector.set(this.position.x - knockbackPosition.x, this.position.y - knockbackPosition.y);
         this.knockbackVector.normalize();
         this.knockbackVector.mult(this.speed);
         this.currentState = this.knockback;
@@ -193,5 +213,101 @@ class Slime {
         } else if (this.position.y > height - this.size / 2) {
             this.position.y = height - this.size / 2;
         }
+    }
+}
+
+class BigSlime extends Slime {
+    constructor(x, y, health) {
+        super(x, y, health);
+        this.size = 40;
+    }
+}
+
+class BossSlime extends Slime {
+
+    constructor(x, y, health) {
+        super(x, y, health);
+        this.size = 80;
+    }
+}
+
+class Zombie extends Slime {
+    constructor(x, y, health) {
+        super(x, y, health);
+        this.speed = 1;
+        this.primaryColor = color(60, 160, 140);
+        this.secondaryColor = color(30, 110, 95);
+        this.damagePrimaryColor = color(220, 50, 0);
+        this.damageSecondaryColor = color(160, 50, 0);
+    }
+
+    draw() {
+        push();
+        translate(this.position.x, this.position.y);
+        rotate(this.direction);
+        noStroke();
+        // Outer body
+        if (this.currentState === this.knockback) {
+            fill(this.damagePrimaryColor);
+        } else {
+            fill(this.primaryColor);
+        }
+        ellipse(0, 0, this.size, this.size);
+        // Arms
+        rect(this.size / 4, this.size / 4, this.size / 2.5, this.size / 2.5);
+        rect(this.size / 4, -this.size / 4 - this.size / 2.5, this.size / 2.5, this.size / 2.5);
+        // Inner body
+        if (this.currentState === this.knockback) {
+            fill(this.damageSecondaryColor);
+        } else {
+            fill(this.secondaryColor);
+        }
+        ellipse(0, 0, this.size * 0.75, this.size * 0.75);
+        // Eyes
+        fill(0);
+        ellipse(this.size * 7 / 20, this.size * 3.5 / 20, this.size / 5, this.size / 5);
+        ellipse(this.size * 7 / 20, -this.size * 3.5 / 20, this.size / 5, this.size / 5);
+        // Health bar
+        rotate(-this.direction);
+        fill(220, 0, 0);
+        rect(-this.size / 2, -this.size / 2 - 15, this.size, 5);
+        fill(0, 220, 0);
+        rect(-this.size / 2, -this.size / 2 - 15, this.size * this.health / this.initialHealth, 5);
+        pop();
+    }
+
+    update() {
+        if (this.currentState !== this.knockback && this.position.dist(game.player.position) < 100) {
+            this.currentState = this.chase;
+        }
+        this.currentState();
+        this.currentFrameCount++;
+        if (this.position.dist(game.player.position) < this.size / 2 + game.player.size / 2) {
+            game.player.damage(this);
+        }
+    }
+
+    wander() {
+        let relativeFrame = this.currentFrameCount % 90;
+        if (relativeFrame === 0) {
+            this.direction = random(0, TWO_PI);
+        } else if (relativeFrame <= 30) {
+            this.position.x += this.speed * cos(this.direction)
+            this.position.y += this.speed * sin(this.direction)
+            this.moveBackInbounds();
+        }
+    }
+
+    chase() {
+        let vectorToPlayer = p5.Vector.sub(game.player.position, this.position);
+        if (vectorToPlayer.mag() >= 100) {
+            this.currentState = this.wander;
+        }
+        vectorToPlayer.normalize();
+        vectorToPlayer.mult(this.speed);
+
+        this.position.add(vectorToPlayer);
+        this.direction = vectorToPlayer.heading();
+        this.moveBackInbounds();
     }
 }

@@ -31,12 +31,13 @@ const pixelText = {
     authorWords: stringToPixelArt("By:Patrick Stock"),
     menuStart: stringToPixelArt("Start"),
     menuInstructions: stringToPixelArt("Instructions"),
-    instructions: stringToPixelArt("Use the arrow keys to move.\nPress z to attack.\nPress x to select."),
+    instructions: stringToPixelArt("Use WASD to move.\nUse the mouse to aim.\nLeft click to attack.\nRight click to shoot."),
     back: stringToPixelArt("Back"),
     wip: stringToPixelArt("Work in Progress"),
     level: stringToPixelArt("Level 1"),
     gameover: stringToPixelArt("Game Over"),
-    playagain: stringToPixelArt("Click to play again"),
+    playagain: stringToPixelArt("Press enter to play again"),
+    attackStrength: stringToPixelArt("Attack strength:1"),
 }
 
 /**
@@ -58,12 +59,6 @@ function mouseClicked() {
             break;
         case gameStates.Instructions:
             if (mouseX > 0 && mouseX < 70 && mouseY > 340 && mouseY < 374) {
-                game.currentGameState = gameStates.Menu;
-                reset();
-            }
-            break;
-        case gameStates.GameOver:
-            if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
                 game.currentGameState = gameStates.Menu;
                 reset();
             }
@@ -90,6 +85,8 @@ function keyReleased() {
  */
 function setup() {
     createCanvas(400, 400);
+    // Stop right click from bringing up the context menu, so we can use it as an input
+    document.addEventListener('contextmenu', event => event.preventDefault());
     game.wallImg = loadImage("wall-pixel-art.png");
     // Initialize important game components
     reset();
@@ -135,6 +132,7 @@ function drawWords(x, y, words, pixelSize, color) {
 
 function drawLevelText() {
     drawWords(10, 10, pixelText.level, 1.5, color(230));
+    drawWords(10, 375, pixelText.attackStrength, 1, color(230));
 }
 
 function drawEntities() {
@@ -206,10 +204,6 @@ function drawInstructions() {
  * Draw the game to the screen
  */
 function drawGame() {
-    if (game.level === 3) {
-        drawWords(12, 150, pixelText.wip, 2, color(230));
-        return;
-    }
     drawLevelText();
     drawParticles();
     drawEntities();
@@ -220,10 +214,16 @@ function drawGame() {
         return;
     }
     if (game.enemies.length === 0) {
+        let playerAttackStrength = game.player.attackStrength;
         reset();
         game.level++;
         pixelText.level = stringToPixelArt("Level " + game.level);
         initTilemap(game.level);
+        if ((game.level - 1) % 5 === 0) {
+            playerAttackStrength++;
+            pixelText.attackStrength = stringToPixelArt("Attack strength:" + playerAttackStrength);
+        }
+        game.player.attackStrength = playerAttackStrength;
     }
 }
 
@@ -232,7 +232,11 @@ function drawGame() {
  */
 function drawGameOver() {
     drawWords(95, 150, pixelText.gameover, 2, color(230));
-    drawWords(30, 250, pixelText.playagain, 1.5, color(230));
+    drawWords(35, 225, pixelText.playagain, 1.1, color(230));
+    if (game.keyArray[ENTER] === 1) {
+        game.currentGameState = gameStates.Menu;
+        reset();
+    }
 }
 
 /**
