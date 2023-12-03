@@ -86,7 +86,7 @@ function keyReleased() {
 function setup() {
     createCanvas(400, 400);
     // Stop right click from bringing up the context menu, so we can use it as an input
-    // document.addEventListener('contextmenu', event => event.preventDefault());
+    document.addEventListener('contextmenu', event => event.preventDefault());
     game.wallImg = loadImage("wall-pixel-art.png");
     // Initialize important game components
     reset();
