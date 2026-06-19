@@ -1,0 +1,103 @@
+<style>
+  .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    background-color: var(--ctp-crust);
+  }
+
+  .profile-avatar {
+    flex-shrink: 0;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--ctp-mauve);
+  }
+
+  .profile-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .profile-name {
+    margin: 0;
+    font-size: 1.8rem;
+    line-height: 1.2;
+  }
+
+  .profile-subtitle {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--ctp-overlay1);
+    font-style: italic;
+  }
+
+  .profile-socials {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .profile-socials a {
+    color: var(--ctp-overlay1);
+    transition: transform 0.2s ease-in-out, color 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+  }
+
+  .profile-socials a:hover {
+    color: var(--ctp-mauve);
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 600px) {
+    .profile-header {
+      flex-direction: column;
+      text-align: center;
+      padding: 2rem 1.5rem;
+    }
+
+    .profile-socials {
+      justify-content: center;
+    }
+  }
+</style>
+
+<div class="profile-header">
+  {% if image is defined %}
+    <img src="{{ image }}" alt="{{ name }}'s avatar" class="profile-avatar" />
+  {% endif %}
+
+  <div class="profile-details">
+    <h1 class="profile-name">{{ name }}</h1>
+    
+    {% if subtitle is defined %}
+      <p class="profile-subtitle">{{ subtitle }}</p>
+    {% endif %}
+
+    <div class="profile-socials">
+      {% if github is defined %}
+        <a href="{{ github }}" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></g></svg>
+        </a>
+      {% endif %}
+
+      {% if linkedin is defined %}
+        <a href="{{ linkedin }}" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-linkedin"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
+        </a>
+      {% endif %}
+
+      {% if email is defined %}
+        <a href="mailto:{{ email }}" aria-label="Email">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail-icon lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
